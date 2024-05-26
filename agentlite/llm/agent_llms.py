@@ -1,3 +1,5 @@
+import os
+
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from openai import OpenAI
@@ -47,6 +49,33 @@ class OpenAIChatLLM(BaseLLM):
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": prompt},
             ],
+        )
+        return response.choices[0].message.content
+
+
+class MSChatLLM(BaseLLM):
+    def __init__(self, llm_config: LLMConfig):
+        super().__init__(llm_config=llm_config)
+        self.api_key = llm_config.api_key
+        self.base_url = llm_config.base_url
+        self.en_prompt = llm_config.en_prompt
+        self.client = OpenAI(api_key=self.api_key,
+                             base_url=self.base_url)
+
+    def run(self, prompt: str, system_prompt: str = ""):
+        if len(system_prompt) == 0:
+            if self.en_prompt:
+                system_prompt = "You are a helpful assistant."
+            else:
+                system_prompt = "你是 Kimi，由 Moonshot AI 提供的人工智能助手，你更擅长中文和英文的对话。你会为用户提供安全，有帮助，准确的回答。同时，你会拒绝一切涉及恐怖主义，种族歧视，黄色暴力等问题的回答。Moonshot AI 为专有名词，不可翻译成其他语言。"
+        
+        response = self.client.chat.completions.create(
+            model=self.llm_name,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=self.temperature,
         )
         return response.choices[0].message.content
 
